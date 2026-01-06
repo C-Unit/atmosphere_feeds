@@ -12,9 +12,8 @@ defmodule AtmosphereFeeds.Application do
       AtmosphereFeeds.Repo,
       {DNSCluster, query: Application.get_env(:atmosphere_feeds, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: AtmosphereFeeds.PubSub},
-      # Start a worker by calling: AtmosphereFeeds.Worker.start_link(arg)
-      # {AtmosphereFeeds.Worker, arg},
-      # Start to serve requests, typically the last entry
+      {Task.Supervisor, name: AtmosphereFeeds.TaskSupervisor},
+      AtmosphereFeeds.Firehose.Consumer,
       AtmosphereFeedsWeb.Endpoint
     ]
 

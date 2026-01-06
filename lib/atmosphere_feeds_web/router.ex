@@ -17,7 +17,7 @@ defmodule AtmosphereFeedsWeb.Router do
   scope "/", AtmosphereFeedsWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", FeedLive
   end
 
   # Other scopes may use custom stacks.
