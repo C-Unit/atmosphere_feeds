@@ -5,22 +5,32 @@ defmodule AtmosphereFeedsWeb.FeedLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    if connected?(socket) do
-      Feeds.subscribe()
-    end
+    if connected?(socket), do: Feeds.subscribe()
+    {:ok, assign(socket, :page_title, "Feed")}
+  end
 
-    documents = Feeds.list_recent_documents(50)
+  @impl true
+  def handle_params(params, _uri, socket) do
+    publication_id = params["publication"]
+    publication = publication_id && Feeds.get_publication(publication_id)
+    documents = Feeds.list_recent_documents(50, publication_id: publication_id)
 
-    {:ok,
+    {:noreply,
      socket
-     |> assign(:documents, documents)
-     |> assign(:page_title, "Feed")}
+     |> assign(:publication_filter, publication)
+     |> assign(:documents, documents)}
   end
 
   @impl true
   def handle_info({:new_document, document}, socket) do
-    documents = [document | socket.assigns.documents] |> Enum.take(100)
-    {:noreply, assign(socket, :documents, documents)}
+    filter = socket.assigns.publication_filter
+
+    if is_nil(filter) or document.publication_id == filter.id do
+      documents = [document | socket.assigns.documents] |> Enum.take(100)
+      {:noreply, assign(socket, :documents, documents)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -34,6 +44,13 @@ defmodule AtmosphereFeedsWeb.FeedLive do
     <div class="space-y-4">
       <h1 class="text-2xl font-bold">Atmosphere Feed</h1>
       <p class="text-base-content/60">Real-time publications from the atmosphere</p>
+
+      <%= if @publication_filter do %>
+        <div class="alert alert-info">
+          <span>Filtering by: <strong>{@publication_filter.name}</strong></span>
+          <.link patch={~p"/"} class="btn btn-sm btn-ghost">Clear filter</.link>
+        </div>
+      <% end %>
 
       <div class="divider"></div>
 
@@ -76,7 +93,12 @@ defmodule AtmosphereFeedsWeb.FeedLive do
               </span>
               <%= if @document.publication do %>
                 <span>in</span>
-                <span class="text-primary">{@document.publication.name}</span>
+                <.link
+                  patch={~p"/?publication=#{@document.publication.id}"}
+                  class="text-primary hover:underline"
+                >
+                  {@document.publication.name}
+                </.link>
               <% end %>
             </div>
 

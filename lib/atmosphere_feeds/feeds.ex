@@ -55,6 +55,12 @@ defmodule AtmosphereFeeds.Feeds do
     |> Repo.all()
   end
 
+  def get_publication(id) do
+    Publication
+    |> preload(:author)
+    |> Repo.get(id)
+  end
+
   def get_publication!(id) do
     Publication
     |> preload(:author)
@@ -96,13 +102,19 @@ defmodule AtmosphereFeeds.Feeds do
 
   # Documents
 
-  def list_recent_documents(limit \\ 50) do
+  def list_recent_documents(limit \\ 50, opts \\ []) do
+    publication_id = Keyword.get(opts, :publication_id)
+
     Document
+    |> maybe_filter_by_publication(publication_id)
     |> order_by([d], desc: d.published_at)
     |> limit(^limit)
     |> preload([:author, :publication])
     |> Repo.all()
   end
+
+  defp maybe_filter_by_publication(query, nil), do: query
+  defp maybe_filter_by_publication(query, id), do: where(query, [d], d.publication_id == ^id)
 
   def get_document!(id) do
     Document
