@@ -16,7 +16,7 @@ defmodule AtmosphereFeedsWeb.FeedXML do
       <link href="#{feed_self_url(base_url, publication)}" rel="self" type="application/atom+xml"/>
       <id>#{feed_id(publication)}</id>
       <updated>#{feed_updated(documents)}</updated>
-      <subtitle>Latest posts from the Atmosphere feed</subtitle>
+      <subtitle>Latest posts, updated live</subtitle>
     #{feed_logo(publication)}#{Enum.map_join(documents, "\n", &entry_xml(&1, base_url))}</feed>
     """
   end

@@ -50,7 +50,7 @@ defmodule AtmosphereFeedsWeb.FeedLive do
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
-              Latest posts, live.
+              Latest posts, updated live.
               <a
                 href="https://github.com/C-Unit/atmosphere_feeds"
                 target="_blank"
