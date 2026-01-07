@@ -47,7 +47,8 @@ defmodule AtmosphereFeedsWeb.FeedLive do
             <h1 class="text-2xl font-bold">Atmosphere Feed</h1>
             <p class="text-base-content/60 flex items-center gap-2">
               <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75">
+                </span>
                 <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
               Latest posts, updated live.
