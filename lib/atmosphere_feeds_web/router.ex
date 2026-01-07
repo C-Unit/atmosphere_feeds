@@ -17,6 +17,7 @@ defmodule AtmosphereFeedsWeb.Router do
   scope "/", AtmosphereFeedsWeb do
     pipe_through :browser
 
+    get "/feed.atom", FeedController, :index
     live "/", FeedLive
   end
 

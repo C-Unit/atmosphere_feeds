@@ -42,8 +42,40 @@ defmodule AtmosphereFeedsWeb.FeedLive do
     ~H"""
     <Layouts.app flash={@flash}>
       <div class="space-y-4">
-        <h1 class="text-2xl font-bold">Atmosphere Feed</h1>
-        <p class="text-base-content/60">Real-time publications from the atmosphere</p>
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold">Atmosphere Feed</h1>
+            <p class="text-base-content/60">Real-time publications from the atmosphere</p>
+          </div>
+          <button
+            id="copy-feed-url"
+            phx-hook=".CopyFeedUrl"
+            data-url={feed_url(@publication_filter)}
+            class="p-2 rounded-lg hover:bg-base-200 transition-colors text-base-content/60 hover:text-base-content"
+            title="Copy feed URL"
+          >
+            <span data-rss><.icon name="hero-rss" class="size-5" /></span>
+            <span data-check class="hidden"><.icon name="hero-check" class="size-5" /></span>
+          </button>
+        </div>
+
+        <script :type={Phoenix.LiveView.ColocatedHook} name=".CopyFeedUrl">
+          export default {
+            mounted() {
+              this.el.addEventListener("click", () => {
+                navigator.clipboard.writeText(this.el.dataset.url);
+                const rss = this.el.querySelector("[data-rss]");
+                const check = this.el.querySelector("[data-check]");
+                rss.classList.add("hidden");
+                check.classList.remove("hidden");
+                setTimeout(() => {
+                  rss.classList.remove("hidden");
+                  check.classList.add("hidden");
+                }, 1500);
+              });
+            }
+          }
+        </script>
 
         <%= if @publication_filter do %>
           <div class="alert alert-info">
@@ -159,4 +191,7 @@ defmodule AtmosphereFeedsWeb.FeedLive do
       true -> Calendar.strftime(datetime, "%b %d, %Y")
     end
   end
+
+  defp feed_url(nil), do: url(~p"/feed.atom")
+  defp feed_url(pub), do: url(~p"/feed.atom?publication=#{pub.id}")
 end
