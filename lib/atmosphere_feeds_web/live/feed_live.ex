@@ -18,7 +18,7 @@ defmodule AtmosphereFeedsWeb.FeedLive do
     {:noreply,
      socket
      |> assign(:publication_filter, publication)
-     |> assign(:documents, documents)}
+     |> stream(:documents, documents, reset: true)}
   end
 
   @impl true
@@ -26,8 +26,7 @@ defmodule AtmosphereFeedsWeb.FeedLive do
     filter = socket.assigns.publication_filter
 
     if is_nil(filter) or document.publication_id == filter.id do
-      documents = [document | socket.assigns.documents] |> Enum.take(100)
-      {:noreply, assign(socket, :documents, documents)}
+      {:noreply, stream_insert(socket, :documents, document, at: 0)}
     else
       {:noreply, socket}
     end
@@ -41,31 +40,30 @@ defmodule AtmosphereFeedsWeb.FeedLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="space-y-4">
-      <h1 class="text-2xl font-bold">Atmosphere Feed</h1>
-      <p class="text-base-content/60">Real-time publications from the atmosphere</p>
+    <Layouts.app flash={@flash}>
+      <div class="space-y-4">
+        <h1 class="text-2xl font-bold">Atmosphere Feed</h1>
+        <p class="text-base-content/60">Real-time publications from the atmosphere</p>
 
-      <%= if @publication_filter do %>
-        <div class="alert alert-info">
-          <span>Filtering by: <strong>{@publication_filter.name}</strong></span>
-          <.link patch={~p"/"} class="btn btn-sm btn-ghost">Clear filter</.link>
-        </div>
-      <% end %>
+        <%= if @publication_filter do %>
+          <div class="alert alert-info">
+            <span>Filtering by: <strong>{@publication_filter.name}</strong></span>
+            <.link patch={~p"/"} class="btn btn-sm btn-ghost">Clear filter</.link>
+          </div>
+        <% end %>
 
-      <div class="divider"></div>
+        <div class="divider"></div>
 
-      <%= if Enum.empty?(@documents) do %>
-        <div class="text-center py-12 text-base-content/50">
-          <p>No documents yet. Waiting for new publications...</p>
-        </div>
-      <% else %>
-        <div class="space-y-4">
-          <%= for document <- @documents do %>
+        <div id="documents" phx-update="stream" class="space-y-4">
+          <div id="documents-empty" class="hidden only:block text-center py-12 text-base-content/50">
+            <p>No documents yet. Waiting for new publications...</p>
+          </div>
+          <div :for={{id, document} <- @streams.documents} id={id}>
             <.document_card document={document} />
-          <% end %>
+          </div>
         </div>
-      <% end %>
-    </div>
+      </div>
+    </Layouts.app>
     """
   end
 
