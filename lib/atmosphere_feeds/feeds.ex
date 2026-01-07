@@ -75,9 +75,21 @@ defmodule AtmosphereFeeds.Feeds do
     %Publication{}
     |> Publication.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [:url, :name, :description, :icon_cid, :theme_background,
-        :theme_foreground, :theme_accent, :theme_accent_foreground, :show_in_discover,
-        :author_id, :updated_at]},
+      on_conflict:
+        {:replace,
+         [
+           :url,
+           :name,
+           :description,
+           :icon_cid,
+           :theme_background,
+           :theme_foreground,
+           :theme_accent,
+           :theme_accent_foreground,
+           :show_in_discover,
+           :author_id,
+           :updated_at
+         ]},
       conflict_target: :at_uri
     )
   end
@@ -112,9 +124,22 @@ defmodule AtmosphereFeeds.Feeds do
     %Document{}
     |> Document.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [:title, :path, :full_url, :description, :text_content,
-        :tags, :cover_image_cid, :bsky_post_uri, :updated_at_source, :publication_id,
-        :author_id, :updated_at]},
+      on_conflict:
+        {:replace,
+         [
+           :title,
+           :path,
+           :full_url,
+           :description,
+           :text_content,
+           :tags,
+           :cover_image_cid,
+           :bsky_post_uri,
+           :updated_at_source,
+           :publication_id,
+           :author_id,
+           :updated_at
+         ]},
       conflict_target: :at_uri
     )
   end

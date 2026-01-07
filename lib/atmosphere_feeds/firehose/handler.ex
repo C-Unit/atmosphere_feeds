@@ -57,6 +57,7 @@ defmodule AtmosphereFeeds.Firehose.Handler do
 
       if record do
         Logger.info("[Firehose] Processing #{collection} rkey=#{rkey}")
+
         Task.Supervisor.start_child(
           AtmosphereFeeds.TaskSupervisor,
           fn -> process_record(collection, did, rkey, record) end
@@ -68,7 +69,8 @@ defmodule AtmosphereFeeds.Firehose.Handler do
   end
 
   # Extract all records from CAR blocks that match a given $type
-  defp extract_records_from_car(blocks, collection) when is_binary(blocks) and byte_size(blocks) > 0 do
+  defp extract_records_from_car(blocks, collection)
+       when is_binary(blocks) and byte_size(blocks) > 0 do
     alias Exosphere.ATProto.CAR
 
     case CAR.decode(blocks) do

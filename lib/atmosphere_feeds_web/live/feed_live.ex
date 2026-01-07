@@ -72,11 +72,11 @@ defmodule AtmosphereFeedsWeb.FeedLive do
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 text-sm text-base-content/60">
               <span class="font-medium text-base-content">
-                <%= author_name(@document.author) %>
+                {author_name(@document.author)}
               </span>
               <%= if @document.publication do %>
                 <span>in</span>
-                <span class="text-primary"><%= @document.publication.name %></span>
+                <span class="text-primary">{@document.publication.name}</span>
               <% end %>
             </div>
 
@@ -88,28 +88,28 @@ defmodule AtmosphereFeedsWeb.FeedLive do
                   rel="noopener noreferrer"
                   class="hover:underline"
                 >
-                  <%= @document.title %>
+                  {@document.title}
                 </a>
               <% else %>
-                <%= @document.title %>
+                {@document.title}
               <% end %>
             </h2>
 
             <%= if @document.description do %>
               <p class="text-base-content/70 mt-2 line-clamp-2">
-                <%= @document.description %>
+                {@document.description}
               </p>
             <% end %>
 
             <div class="flex items-center gap-4 mt-3 text-sm text-base-content/50">
               <time datetime={DateTime.to_iso8601(@document.published_at)}>
-                <%= format_time(@document.published_at) %>
+                {format_time(@document.published_at)}
               </time>
 
               <%= if @document.tags != [] do %>
                 <div class="flex gap-1">
                   <%= for tag <- Enum.take(@document.tags, 3) do %>
-                    <span class="badge badge-sm badge-outline"><%= tag %></span>
+                    <span class="badge badge-sm badge-outline">{tag}</span>
                   <% end %>
                 </div>
               <% end %>

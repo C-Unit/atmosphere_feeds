@@ -66,7 +66,8 @@ defmodule AtmosphereFeeds.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
-      {:exosphere, "~> 0.1.0"}
+      {:exosphere, "~> 0.1.0"},
+      {:patch, "~> 0.16.0", only: [:test]}
     ]
   end
 
