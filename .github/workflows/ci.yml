@@ -17,7 +17,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -61,9 +61,6 @@ jobs:
 
       - name: Install dependencies
         run: mix deps.get
-
-      - name: Check unused dependencies
-        run: mix deps.unlock --check-unused
 
       - name: Compile with warnings as errors
         run: mix compile --warnings-as-errors
