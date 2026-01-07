@@ -45,7 +45,17 @@ defmodule AtmosphereFeedsWeb.FeedLive do
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold">Atmosphere Feed</h1>
-            <p class="text-base-content/60">Real-time publications from the atmosphere</p>
+            <p class="text-base-content/60">
+              Standard site publications and documents.
+              <a
+                href="https://github.com/C-Unit/atmosphere_feeds"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary hover:underline"
+              >
+                View on GitHub
+              </a>
+            </p>
           </div>
           <button
             id="copy-feed-url"
