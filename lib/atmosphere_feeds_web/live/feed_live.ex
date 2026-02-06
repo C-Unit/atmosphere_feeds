@@ -196,15 +196,7 @@ defmodule AtmosphereFeedsWeb.FeedLive do
   defp format_time(nil), do: ""
 
   defp format_time(datetime) do
-    now = DateTime.utc_now()
-    diff = DateTime.diff(now, datetime, :second)
-
-    cond do
-      diff < 60 -> "just now"
-      diff < 3600 -> "#{div(diff, 60)}m ago"
-      diff < 86400 -> "#{div(diff, 3600)}h ago"
-      true -> Calendar.strftime(datetime, "%b %d, %Y")
-    end
+    Calendar.strftime(datetime, "%b %d, %Y at %I:%M %p UTC")
   end
 
   defp feed_url(nil), do: url(~p"/feed.atom")
