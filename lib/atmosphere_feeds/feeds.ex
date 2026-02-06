@@ -104,8 +104,10 @@ defmodule AtmosphereFeeds.Feeds do
 
   def list_recent_documents(limit \\ 50, opts \\ []) do
     publication_id = Keyword.get(opts, :publication_id)
+    now = DateTime.utc_now()
 
     Document
+    |> where([d], d.published_at <= ^now)
     |> maybe_filter_by_publication(publication_id)
     |> order_by([d], desc: d.published_at)
     |> limit(^limit)
