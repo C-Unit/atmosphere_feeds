@@ -26,6 +26,9 @@ config :atmosphere_feeds, AtmosphereFeeds.Mailer, adapter: Swoosh.Adapters.Test
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 
+# Route Validator HTTP requests through Req.Test stubs
+config :atmosphere_feeds, AtmosphereFeeds.Validator, plug: {Req.Test, AtmosphereFeeds.Validator}
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

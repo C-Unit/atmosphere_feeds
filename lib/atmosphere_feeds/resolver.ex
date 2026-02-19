@@ -6,6 +6,7 @@ defmodule AtmosphereFeeds.Resolver do
   require Logger
   alias AtmosphereFeeds.Feeds
   alias AtmosphereFeeds.Repo
+  alias AtmosphereFeeds.Validator
 
   @doc """
   Resolves and stores a publication record from firehose data.
@@ -13,7 +14,8 @@ defmodule AtmosphereFeeds.Resolver do
   def resolve_and_store_publication(did, rkey, record) do
     at_uri = "at://#{did}/site.standard.publication/#{rkey}"
 
-    with {:ok, author} <- resolve_author(did) do
+    with {:ok, author} <- resolve_author(did),
+         :ok <- Validator.validate_publication(at_uri, record["url"]) do
       attrs = %{
         at_uri: at_uri,
         did: did,
@@ -40,6 +42,10 @@ defmodule AtmosphereFeeds.Resolver do
           Logger.warning("Failed to store publication #{at_uri}: #{inspect(changeset.errors)}")
           {:error, changeset}
       end
+    else
+      {:error, reason} ->
+        Logger.warning("Validation failed for publication #{at_uri}: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 
@@ -50,9 +56,9 @@ defmodule AtmosphereFeeds.Resolver do
     at_uri = "at://#{did}/site.standard.document/#{rkey}"
 
     with {:ok, author} <- resolve_author(did),
-         {:ok, publication, site_url} <- resolve_site(record["site"]) do
-      full_url = build_full_url(site_url, record["path"])
-
+         {:ok, publication, site_url} <- resolve_site(record["site"]),
+         full_url = build_full_url(site_url, record["path"]),
+         :ok <- Validator.validate_document(at_uri, full_url) do
       attrs = %{
         at_uri: at_uri,
         did: did,
@@ -81,6 +87,10 @@ defmodule AtmosphereFeeds.Resolver do
           Logger.warning("Failed to store document #{at_uri}: #{inspect(changeset.errors)}")
           {:error, changeset}
       end
+    else
+      {:error, reason} ->
+        Logger.warning("Validation failed for document #{at_uri}: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 

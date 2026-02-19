@@ -39,6 +39,17 @@ defmodule AtmosphereFeeds.Firehose.HandlerTest do
         {:ok, %{:fake_cid => @sample_document_record}}
       end)
 
+      doc_at_uri = "at://#{@sample_did}/site.standard.document/#{@sample_rkey}"
+
+      Req.Test.stub(AtmosphereFeeds.Validator, fn conn ->
+        html =
+          ~s(<html><head><link rel="site.standard.document" href="#{doc_at_uri}"></head><body></body></html>)
+
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "text/html")
+        |> Plug.Conn.send_resp(200, html)
+      end)
+
       msg = %{
         type: :commit,
         repo: @sample_did,
@@ -79,6 +90,12 @@ defmodule AtmosphereFeeds.Firehose.HandlerTest do
 
       patch(Exosphere.ATProto.CAR, :decode, fn _blocks ->
         {:ok, %{:fake_cid => publication_record}}
+      end)
+
+      pub_at_uri = "at://#{@sample_did}/site.standard.publication/testpub"
+
+      Req.Test.stub(AtmosphereFeeds.Validator, fn conn ->
+        Plug.Conn.send_resp(conn, 200, pub_at_uri)
       end)
 
       msg = %{
@@ -137,6 +154,17 @@ defmodule AtmosphereFeeds.Firehose.HandlerTest do
 
       patch(Exosphere.ATProto.CAR, :decode, fn _blocks ->
         {:ok, %{:fake_cid => @sample_document_record}}
+      end)
+
+      doc_at_uri = "at://#{@sample_did}/site.standard.document/fallback123"
+
+      Req.Test.stub(AtmosphereFeeds.Validator, fn conn ->
+        html =
+          ~s(<html><head><link rel="site.standard.document" href="#{doc_at_uri}"></head><body></body></html>)
+
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "text/html")
+        |> Plug.Conn.send_resp(200, html)
       end)
 
       msg = %{
