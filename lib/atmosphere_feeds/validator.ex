@@ -30,7 +30,7 @@ defmodule AtmosphereFeeds.Validator do
       |> String.trim_trailing("/")
       |> Kernel.<>("/.well-known/site.standard.publication")
 
-    case Req.get(well_known_url, req_options()) do
+    case Req.get(well_known_url, [retry: false] ++ req_options()) do
       {:ok, %Req.Response{status: 200, body: body}} when is_binary(body) ->
         if String.trim(body) == at_uri do
           :ok
@@ -58,7 +58,7 @@ defmodule AtmosphereFeeds.Validator do
       <link rel="site.standard.document" href="{at_uri}">
   """
   def validate_document(at_uri, full_url) when is_binary(at_uri) and is_binary(full_url) do
-    case Req.get(full_url, req_options()) do
+    case Req.get(full_url, [retry: false] ++ req_options()) do
       {:ok, %Req.Response{status: 200, body: body}} when is_binary(body) ->
         if has_document_link_tag?(body, at_uri) do
           :ok
@@ -71,7 +71,10 @@ defmodule AtmosphereFeeds.Validator do
         {:error, :document_not_found}
 
       {:error, exception} ->
-        Logger.warning("Document validation request failed for #{full_url}: #{inspect(exception)}")
+        Logger.warning(
+          "Document validation request failed for #{full_url}: #{inspect(exception)}"
+        )
+
         {:error, {:request_failed, exception}}
     end
   end

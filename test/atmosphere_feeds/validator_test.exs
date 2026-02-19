@@ -28,8 +28,8 @@ defmodule AtmosphereFeeds.ValidatorTest do
     end
 
     test "returns error when .well-known response does not match AT-URI" do
-      Req.Test.stub(Validator, fn _conn ->
-        Plug.Conn.send_resp(_conn, 200, "at://did:plc:wrong/site.standard.publication/otherrkey")
+      Req.Test.stub(Validator, fn conn ->
+        Plug.Conn.send_resp(conn, 200, "at://did:plc:wrong/site.standard.publication/otherrkey")
       end)
 
       assert {:error, :publication_mismatch} =
