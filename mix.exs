@@ -40,7 +40,7 @@ defmodule AtmosphereFeeds.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.8.3"},
+      {:phoenix, "~> 1.8.7"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
@@ -65,7 +65,7 @@ defmodule AtmosphereFeeds.MixProject do
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"},
+      {:bandit, "~> 1.11"},
       {:exosphere, "~> 0.1.0"},
       {:patch, "~> 0.16.0", only: [:test]}
     ]

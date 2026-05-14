@@ -32,13 +32,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Install mise
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@v4.0.1
 
       - name: Cache deps
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.5
         with:
           path: deps
           key: ${{ runner.os }}-mix-deps-${{ hashFiles('**/mix.lock') }}
@@ -46,7 +46,7 @@ jobs:
             ${{ runner.os }}-mix-deps-
 
       - name: Cache build
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.5
         with:
           path: _build
           key: ${{ runner.os }}-mix-build-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('lib/**/*.ex', 'test/**/*.ex') }}
@@ -75,3 +75,14 @@ jobs:
         run: mix test
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/atmosphere_feeds_test
+
+  vuln-scan:
+    name: OSV vulnerability scan
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    with:
+      scan-args: |-
+        --lockfile=mix.lock
