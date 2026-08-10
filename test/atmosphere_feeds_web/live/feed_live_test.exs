@@ -232,6 +232,83 @@ defmodule AtmosphereFeedsWeb.FeedLiveTest do
       refute html =~ "Filtering by:"
     end
 
+    test "ignore button marks the publication as ignored", %{conn: conn} do
+      {:ok, author} = Feeds.upsert_author(%{did: "did:plc:ignore", handle: "ignore.test"})
+
+      {:ok, pub} =
+        Feeds.upsert_publication(%{
+          at_uri: "at://did:plc:ignore/site.standard.publication/ignorable",
+          did: "did:plc:ignore",
+          rkey: "ignorable",
+          name: "Ignorable Pub",
+          url: "https://ignorable.example.com",
+          author_id: author.id
+        })
+
+      {:ok, view, _html} = live(conn, "/?publication=#{pub.id}")
+
+      refute has_element?(view, "#ignored-notice")
+
+      html = view |> element("#toggle-ignore-publication") |> render_click()
+
+      assert html =~ "Stop ignoring"
+      assert has_element?(view, "#ignored-notice")
+      assert Feeds.get_publication(pub.id).ignored
+
+      html = view |> element("#toggle-ignore-publication") |> render_click()
+
+      assert html =~ "Ignore publication"
+      refute has_element?(view, "#ignored-notice")
+      refute Feeds.get_publication(pub.id).ignored
+    end
+
+    test "documents from ignored publications are hidden from the unfiltered feed", %{conn: conn} do
+      {:ok, author} = Feeds.upsert_author(%{did: "did:plc:hidden", handle: "hidden.test"})
+
+      {:ok, pub} =
+        Feeds.upsert_publication(%{
+          at_uri: "at://did:plc:hidden/site.standard.publication/hiddenpub",
+          did: "did:plc:hidden",
+          rkey: "hiddenpub",
+          name: "Hidden Pub",
+          url: "https://hidden.example.com",
+          author_id: author.id
+        })
+
+      {:ok, _doc} =
+        Feeds.upsert_document(%{
+          at_uri: "at://did:plc:hidden/site.standard.document/hiddendoc",
+          did: "did:plc:hidden",
+          rkey: "hiddendoc",
+          title: "Doc From Ignored Pub",
+          published_at: DateTime.utc_now(),
+          author_id: author.id,
+          publication_id: pub.id
+        })
+
+      {:ok, _doc} =
+        Feeds.upsert_document(%{
+          at_uri: "at://did:plc:hidden/site.standard.document/visibledoc",
+          did: "did:plc:hidden",
+          rkey: "visibledoc",
+          title: "Doc From Allowed Pub",
+          published_at: DateTime.utc_now(),
+          author_id: author.id
+        })
+
+      {:ok, _pub} = Feeds.set_publication_ignored(pub, true)
+
+      {:ok, _view, html} = live(conn, "/")
+
+      refute html =~ "Doc From Ignored Pub"
+      assert html =~ "Doc From Allowed Pub"
+
+      # Still reachable when the publication is asked for explicitly, so it can
+      # be reviewed and un-ignored.
+      {:ok, _view, html} = live(conn, "/?publication=#{pub.id}")
+      assert html =~ "Doc From Ignored Pub"
+    end
+
     test "live updates respect publication filter", %{conn: conn} do
       {:ok, author} = Feeds.upsert_author(%{did: "did:plc:livefilter", handle: "livefilter.test"})
 

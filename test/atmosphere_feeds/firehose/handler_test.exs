@@ -115,6 +115,164 @@ defmodule AtmosphereFeeds.Firehose.HandlerTest do
       assert pub.theme_foreground == "#000000"
     end
 
+    test "drops documents from an ignored publication" do
+      patch(Exosphere.ATProto.Bsky, :get_profile, {:ok, @mock_profile})
+
+      {:ok, publication} =
+        Feeds.upsert_publication(%{
+          at_uri: "at://#{@sample_did}/site.standard.publication/koio",
+          did: @sample_did,
+          rkey: "koio",
+          name: "KOIOS",
+          url: "https://koio.sh"
+        })
+
+      {:ok, _publication} = Feeds.set_publication_ignored(publication, true)
+
+      patch(Exosphere.ATProto.CAR, :decode, fn _blocks ->
+        {:ok, %{:fake_cid => @sample_document_record}}
+      end)
+
+      test_pid = self()
+
+      Req.Test.stub(AtmosphereFeeds.Validator, fn conn ->
+        send(test_pid, :validator_called)
+        Plug.Conn.send_resp(conn, 200, "")
+      end)
+
+      msg = %{
+        type: :commit,
+        repo: @sample_did,
+        ops: [%{path: "site.standard.document/#{@sample_rkey}", action: :create, cid: nil}],
+        blocks: <<1, 2, 3>>
+      }
+
+      Handler.on_event(msg, %{})
+
+      refute_receive {:new_document, _}, 500
+      refute_received :validator_called
+
+      assert Feeds.get_document_by_at_uri(
+               "at://#{@sample_did}/site.standard.document/#{@sample_rkey}"
+             ) == nil
+    end
+
+    test "drops documents referencing an ignored publication by AT-URI" do
+      patch(Exosphere.ATProto.Bsky, :get_profile, {:ok, @mock_profile})
+
+      pub_at_uri = "at://#{@sample_did}/site.standard.publication/koio"
+
+      {:ok, publication} =
+        Feeds.upsert_publication(%{
+          at_uri: pub_at_uri,
+          did: @sample_did,
+          rkey: "koio",
+          name: "KOIOS",
+          url: "https://koio.sh"
+        })
+
+      {:ok, _publication} = Feeds.set_publication_ignored(publication, true)
+
+      record = Map.put(@sample_document_record, "site", pub_at_uri)
+
+      patch(Exosphere.ATProto.CAR, :decode, fn _blocks -> {:ok, %{:fake_cid => record}} end)
+
+      msg = %{
+        type: :commit,
+        repo: @sample_did,
+        ops: [%{path: "site.standard.document/#{@sample_rkey}", action: :create, cid: nil}],
+        blocks: <<1, 2, 3>>
+      }
+
+      Handler.on_event(msg, %{})
+
+      refute_receive {:new_document, _}, 500
+    end
+
+    test "drops updates to an ignored publication record" do
+      patch(Exosphere.ATProto.Bsky, :get_profile, {:ok, @mock_profile})
+
+      pub_at_uri = "at://#{@sample_did}/site.standard.publication/testpub"
+
+      {:ok, publication} =
+        Feeds.upsert_publication(%{
+          at_uri: pub_at_uri,
+          did: @sample_did,
+          rkey: "testpub",
+          name: "Original Name",
+          url: "https://example.com"
+        })
+
+      {:ok, _publication} = Feeds.set_publication_ignored(publication, true)
+
+      patch(Exosphere.ATProto.CAR, :decode, fn _blocks ->
+        {:ok,
+         %{
+           :fake_cid => %{
+             "$type" => "site.standard.publication",
+             "url" => "https://example.com",
+             "name" => "Renamed Publication"
+           }
+         }}
+      end)
+
+      msg = %{
+        type: :commit,
+        repo: @sample_did,
+        ops: [%{path: "site.standard.publication/testpub", action: :update, cid: nil}],
+        blocks: <<1, 2, 3>>
+      }
+
+      Handler.on_event(msg, %{})
+
+      refute_receive {:new_publication, _}, 500
+
+      assert Feeds.get_publication_by_at_uri(pub_at_uri).name == "Original Name"
+    end
+
+    test "resumes ingestion once a publication is un-ignored" do
+      patch(Exosphere.ATProto.Bsky, :get_profile, {:ok, @mock_profile})
+
+      {:ok, publication} =
+        Feeds.upsert_publication(%{
+          at_uri: "at://#{@sample_did}/site.standard.publication/koio",
+          did: @sample_did,
+          rkey: "koio",
+          name: "KOIOS",
+          url: "https://koio.sh"
+        })
+
+      {:ok, publication} = Feeds.set_publication_ignored(publication, true)
+      {:ok, _publication} = Feeds.set_publication_ignored(publication, false)
+
+      patch(Exosphere.ATProto.CAR, :decode, fn _blocks ->
+        {:ok, %{:fake_cid => @sample_document_record}}
+      end)
+
+      doc_at_uri = "at://#{@sample_did}/site.standard.document/#{@sample_rkey}"
+
+      Req.Test.stub(AtmosphereFeeds.Validator, fn conn ->
+        html =
+          ~s(<html><head><link rel="site.standard.document" href="#{doc_at_uri}"></head><body></body></html>)
+
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "text/html")
+        |> Plug.Conn.send_resp(200, html)
+      end)
+
+      msg = %{
+        type: :commit,
+        repo: @sample_did,
+        ops: [%{path: "site.standard.document/#{@sample_rkey}", action: :create, cid: nil}],
+        blocks: <<1, 2, 3>>
+      }
+
+      Handler.on_event(msg, %{})
+
+      assert_receive {:new_document, doc}, 5000
+      assert doc.at_uri == doc_at_uri
+    end
+
     test "ignores non-site.standard collections" do
       msg = %{
         type: :commit,

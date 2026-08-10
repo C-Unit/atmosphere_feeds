@@ -22,6 +22,31 @@ defmodule AtmosphereFeedsWeb.FeedLive do
   end
 
   @impl true
+  def handle_event("toggle_ignore", _params, %{assigns: %{publication_filter: nil}} = socket) do
+    {:noreply, socket}
+  end
+
+  def handle_event("toggle_ignore", _params, socket) do
+    publication = socket.assigns.publication_filter
+
+    case Feeds.set_publication_ignored(publication, !publication.ignored) do
+      {:ok, publication} ->
+        message =
+          if publication.ignored,
+            do: "Now ignoring #{publication.name}. New posts will be dropped.",
+            else: "No longer ignoring #{publication.name}."
+
+        {:noreply,
+         socket
+         |> assign(:publication_filter, publication)
+         |> put_flash(:info, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Could not update #{publication.name}.")}
+    end
+  end
+
+  @impl true
   def handle_info({:new_document, document}, socket) do
     filter = socket.assigns.publication_filter
 
@@ -93,10 +118,44 @@ defmodule AtmosphereFeedsWeb.FeedLive do
         </script>
 
         <%= if @publication_filter do %>
-          <div class="alert alert-info">
-            <span>Filtering by: <strong>{@publication_filter.name}</strong></span>
+          <div class={[
+            "alert flex flex-wrap items-center gap-2",
+            if(@publication_filter.ignored, do: "alert-warning", else: "alert-info")
+          ]}>
+            <span class="flex-1">
+              Filtering by: <strong>{@publication_filter.name}</strong>
+              <%= if @publication_filter.ignored do %>
+                <span class="badge badge-sm ml-2">Ignored</span>
+              <% end %>
+            </span>
+
+            <button
+              id="toggle-ignore-publication"
+              type="button"
+              phx-click="toggle_ignore"
+              class="btn btn-sm gap-1"
+              title={
+                if @publication_filter.ignored,
+                  do: "Resume ingesting posts from this publication",
+                  else: "Drop incoming posts from this publication"
+              }
+            >
+              <%= if @publication_filter.ignored do %>
+                <.icon name="hero-eye" class="size-4" /> Stop ignoring
+              <% else %>
+                <.icon name="hero-eye-slash" class="size-4" /> Ignore publication
+              <% end %>
+            </button>
+
             <.link patch={~p"/"} class="btn btn-sm btn-ghost">Clear filter</.link>
           </div>
+
+          <%= if @publication_filter.ignored do %>
+            <p id="ignored-notice" class="text-sm text-base-content/60">
+              Incoming posts from this publication are dropped on arrival — they are not stored
+              and never reach the feed.
+            </p>
+          <% end %>
         <% end %>
 
         <div class="divider"></div>

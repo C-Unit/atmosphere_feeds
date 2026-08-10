@@ -77,6 +77,41 @@ defmodule AtmosphereFeeds.Feeds do
     |> Repo.insert()
   end
 
+  @doc """
+  Marks a publication as ignored (or un-ignores it).
+
+  Ignored publications are dropped at ingestion: their records and the documents
+  they publish are never persisted or broadcast.
+  """
+  def set_publication_ignored(%Publication{} = publication, ignored) when is_boolean(ignored) do
+    publication
+    |> Publication.ignore_changeset(ignored)
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns true when the given `site` reference belongs to an ignored publication.
+
+  A document's `site` field is either the publication's AT-URI or its plain URL,
+  so both are checked.
+  """
+  def ignored_site?(nil), do: false
+
+  def ignored_site?("at://" <> _ = at_uri) do
+    Repo.exists?(from p in Publication, where: p.ignored and p.at_uri == ^at_uri)
+  end
+
+  def ignored_site?(url) when is_binary(url) do
+    normalized = String.trim_trailing(url, "/")
+
+    Repo.exists?(
+      from p in Publication,
+        where: p.ignored and fragment("rtrim(?, '/')", p.url) == ^normalized
+    )
+  end
+
+  def ignored_site?(_), do: false
+
   def upsert_publication(attrs) do
     %Publication{}
     |> Publication.changeset(attrs)
@@ -115,7 +150,14 @@ defmodule AtmosphereFeeds.Feeds do
     |> Repo.all()
   end
 
-  defp maybe_filter_by_publication(query, nil), do: query
+  # Without a filter, documents already stored for a since-ignored publication
+  # stay out of the feed. Asking for that publication explicitly still shows
+  # them, so an ignored publication can be reviewed and un-ignored.
+  defp maybe_filter_by_publication(query, nil) do
+    ignored_ids = from(p in Publication, where: p.ignored, select: p.id)
+    where(query, [d], is_nil(d.publication_id) or d.publication_id not in subquery(ignored_ids))
+  end
+
   defp maybe_filter_by_publication(query, id), do: where(query, [d], d.publication_id == ^id)
 
   def get_document!(id) do
