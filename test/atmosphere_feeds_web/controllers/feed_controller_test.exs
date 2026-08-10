@@ -88,6 +88,33 @@ defmodule AtmosphereFeedsWeb.FeedControllerTest do
       assert body =~ "<title>Pub One - Atmosphere Feed</title>"
     end
 
+    test "excludes documents from ignored publications", %{conn: conn} do
+      {:ok, pub} =
+        Feeds.upsert_publication(%{
+          at_uri: "at://did:plc:ignored/site.standard.publication/p1",
+          did: "did:plc:ignored",
+          rkey: "p1",
+          name: "Ignored Pub",
+          url: "https://ignored.example.com"
+        })
+
+      {:ok, _} =
+        Feeds.upsert_document(%{
+          at_uri: "at://did:plc:ignored/site.standard.document/d1",
+          did: "did:plc:ignored",
+          rkey: "d1",
+          publication_id: pub.id,
+          title: "Doc From Ignored Pub",
+          published_at: DateTime.utc_now()
+        })
+
+      {:ok, _pub} = Feeds.set_publication_ignored(pub, true)
+
+      body = conn |> get(~p"/feed.atom") |> response(200)
+
+      refute body =~ "Doc From Ignored Pub"
+    end
+
     test "includes logo when publication has icon_cid", %{conn: conn} do
       {:ok, pub} =
         Feeds.upsert_publication(%{

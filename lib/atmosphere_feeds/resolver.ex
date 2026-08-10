@@ -14,7 +14,8 @@ defmodule AtmosphereFeeds.Resolver do
   def resolve_and_store_publication(did, rkey, record) do
     at_uri = "at://#{did}/site.standard.publication/#{rkey}"
 
-    with {:ok, author} <- resolve_author(did),
+    with :ok <- check_not_ignored(at_uri),
+         {:ok, author} <- resolve_author(did),
          :ok <- Validator.validate_publication(at_uri, record["url"]) do
       attrs = %{
         at_uri: at_uri,
@@ -43,6 +44,10 @@ defmodule AtmosphereFeeds.Resolver do
           {:error, changeset}
       end
     else
+      {:error, :publication_ignored} ->
+        Logger.info("[Resolver] Dropping ignored publication #{at_uri}")
+        {:error, :publication_ignored}
+
       {:error, reason} ->
         Logger.warning("Validation failed for publication #{at_uri}: #{inspect(reason)}")
         {:error, reason}
@@ -55,7 +60,8 @@ defmodule AtmosphereFeeds.Resolver do
   def resolve_and_store_document(did, rkey, record) do
     at_uri = "at://#{did}/site.standard.document/#{rkey}"
 
-    with {:ok, author} <- resolve_author(did),
+    with :ok <- check_not_ignored(record["site"]),
+         {:ok, author} <- resolve_author(did),
          {:ok, publication, site_url} <- resolve_site(record["site"]),
          full_url = build_full_url(site_url, record["path"]),
          :ok <- Validator.validate_document(at_uri, full_url) do
@@ -88,10 +94,20 @@ defmodule AtmosphereFeeds.Resolver do
           {:error, changeset}
       end
     else
+      {:error, :publication_ignored} ->
+        Logger.info("[Resolver] Dropping document #{at_uri} from ignored publication")
+        {:error, :publication_ignored}
+
       {:error, reason} ->
         Logger.warning("Validation failed for document #{at_uri}: #{inspect(reason)}")
         {:error, reason}
     end
+  end
+
+  # Records belonging to an ignored publication are dropped before any network
+  # calls or writes happen: nothing is persisted and nothing is broadcast.
+  defp check_not_ignored(site) do
+    if Feeds.ignored_site?(site), do: {:error, :publication_ignored}, else: :ok
   end
 
   @doc """
